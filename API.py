@@ -4,7 +4,8 @@ from preprocessing import preprocess_classes
 
 app = FastAPI()
 
-df = None
+raw_df = fetch_classes_from_sql()
+df = preprocess_classes(raw_df)
 
 
 @app.get("/")
