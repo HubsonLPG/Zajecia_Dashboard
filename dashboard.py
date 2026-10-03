@@ -95,9 +95,10 @@ app.layout = html.Div(children=[
         children=[
             dcc.Dropdown(
                 data_zajec,
-                data_zajec[0],
+                # data_zajec[0],
                 id="data-dropdown",
-                style={"flex": "1"}
+                style={"flex": "1"},
+                placeholder="Wybierz datę"
             ),
             dcc.Dropdown(
                 godzina_od,
@@ -125,9 +126,9 @@ app.layout = html.Div(children=[
         children=[
             dcc.Dropdown(
                 budynekNazwa,
-                "Dąbrowa",
                 id="budynekNazwa-dropdown",
-                style={"flex": "1"}
+                style={"flex": "1"},
+                placeholder="Wybierz budynek"
             ),
             dcc.Dropdown(
                 prowadzacy,
@@ -158,6 +159,16 @@ app.layout = html.Div(children=[
                     dcc.Graph(
                         id='example-graph',
                         figure=fig
+                    ),
+                    html.Div(
+                        children=[
+                            karta("liczba-zajec-card", "Liczba zajęć")
+                        ],
+                        style={
+                            # "marginTop": "5px",
+                            # "marginLeft": "5px",
+                            "margin": "15px auto"
+                        }
                     )
                 ],
                 style={
@@ -168,43 +179,288 @@ app.layout = html.Div(children=[
                     "gap": "5px",
                     # "width": "70%",
                     "border": "1px solid black",
-                    "backgroundColor": "white"
+                    "backgroundColor": "white",
+                    "alignItems": "center"
                 }
+
             ),
-            html.Div(
-                children=[
-                    karta("liczba-zajec-card", "Liczba zajęć")
-                ]
-            )
+            # html.Div(
+            #     children=[
+            #         karta("liczba-zajec-card", "Liczba zajęć")
+            #     ],
+            #     style={
+            #         "marginTop": "5px",
+            #         "marginLeft": "5px"
+            #     }
+            # )
         ]
-    )
-]
+    ),
+    html.Div(
+        children=[
+            dash_table.DataTable(
+                id="classes-table",
+                columns=[
+                    {"name": "Data", "id": "Data"},
+                    {"name": "Godzina od", "id": "godzinaOd"},
+                    {"name": "Godzina do", "id": "godzinaDo"},
+                    {"name": "Prowadzący", "id": "prowadzacy"},
+                    {"name": "Sala", "id": "nazwaSali"},
+                    {"name": "Budynek", "id": "budynekNazwa"},
+                ],
+                data=df[
+                    [
+                        "Data",
+                        "godzinaOd",
+                        "godzinaDo",
+                        "prowadzacy",
+                        "nazwaSali",
+                        "budynekNazwa",
+                    ]
+                ].to_dict("records"),  # pyright: ignore[reportArgumentType]
+
+                page_action="native",
+                page_size=15,
+
+                sort_action="native",
+                filter_action="native",
+
+                style_table={
+                    "overflowX": "auto",
+                },
+
+                style_cell={
+                    "textAlign": "left",
+                    "padding": "8px",
+                },
+
+                style_header={
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                },
+            )
+        ],
+        style={
+            "marginTop": "5px",
+            "marginLeft": "5px",
+            "marginRight": "5px",
+            "border": "1px solid black",
+            "backgroundColor": "white",
+        }
+    ),
+],
+    style={
+    "width": "calc(100% - 30px)",
+    "maxWidth": "1400px",
+    "margin": "15px auto",
+}
 )
+
+
+def filtruj(
+    data_value=None,
+    godzina_od_value=None,
+    godzina_do_value=None,
+    budynek_value=None,
+    prowadzacy_value=None,
+    sala_value=None
+):
+    dff = df.copy()
+
+    if data_value:
+        dff = dff[dff["Data"] == data_value]
+
+    if godzina_od_value:
+        dff = dff[dff["godzinaOd"] == godzina_od_value]
+
+    if godzina_do_value:
+        dff = dff[dff["godzinaDo"] == godzina_do_value]
+
+    if budynek_value:
+        dff = dff[dff["budynekNazwa"] == budynek_value]
+
+    if prowadzacy_value:
+        dff = dff[dff["prowadzacy"] == prowadzacy_value]
+
+    if sala_value:
+        dff = dff[dff["nazwaSali"] == sala_value]
+
+    return dff
 
 
 @callback(
     Output("example-graph", "figure"),
-    Input("data-dropdown", "value")
+    Output("classes-table", "data"),
+    Output("liczba-zajec-card", "children"),
+
+    Output("data-dropdown", "options"),
+    Output("godzina-od-dropdown", "options"),
+    Output("godzina-do-dropdown", "options"),
+    Output("budynekNazwa-dropdown", "options"),
+    Output("prowadzacy-dropdown", "options"),
+    Output("nazwaSali-dropdown", "options"),
+
+    Input("data-dropdown", "value"),
+    Input("godzina-od-dropdown", "value"),
+    Input("godzina-do-dropdown", "value"),
+    Input("budynekNazwa-dropdown", "value"),
+    Input("prowadzacy-dropdown", "value"),
+    Input("nazwaSali-dropdown", "value"),
 )
-def update_output_data(value):
-    dff = df[df.Data == value]
+def update_dashboard(
+    data_value,
+    godzina_od_value,
+    godzina_do_value,
+    budynek_value,
+    prowadzacy_value,
+    sala_value
+):
+    # =========================
+    # FILTROWANIE GŁÓWNE
+    # =========================
+
+    dff = filtruj(
+        data_value,
+        godzina_od_value,
+        godzina_do_value,
+        budynek_value,
+        prowadzacy_value,
+        sala_value
+    )
+
+    # =========================
+    # WYKRES
+    # =========================
+
     liczba_zajec_po_godzinie = (
         dff.groupby("godzinaOd")
         .size()
         .reset_index(name="liczba_zajec")
         .sort_values("godzinaOd")
     )
+
     fig = zajecia(liczba_zajec_po_godzinie)
-    return fig
 
+    # =========================
+    # TABELA
+    # =========================
 
-@callback(
-    Output("liczba-zajec-card", "children"),
-    Input("data-dropdown", "value")
-)
-def update_count_data(value):
-    dff = df[df["Data"] == value]
-    return len(dff)
+    table_data = dff[
+        [
+            "Data",
+            "godzinaOd",
+            "godzinaDo",
+            "prowadzacy",
+            "nazwaSali",
+            "budynekNazwa",
+        ]
+    ].to_dict("records")
+
+    # =========================
+    # OPCJE DROPDOWNÓW
+    # każdy dropdown filtrujemy
+    # wszystkimi pozostałymi
+    # =========================
+
+    data_options = (
+        filtruj(
+            None,
+            godzina_od_value,
+            godzina_do_value,
+            budynek_value,
+            prowadzacy_value,
+            sala_value
+        )["Data"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    godzina_od_options = (
+        filtruj(
+            data_value,
+            None,
+            godzina_do_value,
+            budynek_value,
+            prowadzacy_value,
+            sala_value
+        )["godzinaOd"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    godzina_do_options = (
+        filtruj(
+            data_value,
+            godzina_od_value,
+            None,
+            budynek_value,
+            prowadzacy_value,
+            sala_value
+        )["godzinaDo"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    budynek_options = (
+        filtruj(
+            data_value,
+            godzina_od_value,
+            godzina_do_value,
+            None,
+            prowadzacy_value,
+            sala_value
+        )["budynekNazwa"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    prowadzacy_options = (
+        filtruj(
+            data_value,
+            godzina_od_value,
+            godzina_do_value,
+            budynek_value,
+            None,
+            sala_value
+        )["prowadzacy"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    sala_options = (
+        filtruj(
+            data_value,
+            godzina_od_value,
+            godzina_do_value,
+            budynek_value,
+            prowadzacy_value,
+            None
+        )["nazwaSali"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    # =========================
+    # RETURN
+    # =========================
+
+    return (
+        fig,
+        table_data,
+        len(dff),
+
+        data_options,
+        godzina_od_options,
+        godzina_do_options,
+        budynek_options,
+        prowadzacy_options,
+        sala_options
+    )
 
 
 def run_app():
@@ -217,5 +473,3 @@ def run_app():
 
 
 run_app()
-
-# print(df["Data"])
