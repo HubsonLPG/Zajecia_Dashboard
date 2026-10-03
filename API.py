@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from sql_request import fetch_classes_from_sql
+
 from preprocessing import preprocess_classes
+from sql_request import fetch_classes_from_sql
 
 app = FastAPI()
 
@@ -15,7 +16,7 @@ async def root():
 
 @app.get("/classes")
 async def get_classes():
-    global df
+    global df  # noqa: PLW0602
 
     if df is None:
         return {

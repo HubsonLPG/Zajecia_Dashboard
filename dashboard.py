@@ -1,7 +1,8 @@
-from dash import Dash, html, dcc, callback, Input, Output
-import plotly.express as px
+import dash_bootstrap_components as dbc
 import pandas as pd
+import plotly.express as px
 import requests as re
+from dash import Dash, Input, Output, callback, dash_table, dcc, html
 
 
 def zajecia(df):
@@ -17,7 +18,7 @@ def zajecia(df):
         yaxis_title=None,
         showlegend=False,
         height=350,
-        margin=dict(l=20, r=20, t=20, b=20),
+        margin={"l": 20, "r": 20, "t": 20, "b": 20},
     )
     return fig
 
@@ -29,31 +30,36 @@ def karta(id_wartosci, tytul, value=0):
                 id=id_wartosci,
                 children=value,
                 style={
-                    "fontSize": "44px",
-                    "fontWeight": "bold",
+                    "fontSize": "46px",
+                    "fontWeight": "700",
                     "textAlign": "center",
-                    "lineHeight": "1"
+                    "lineHeight": "1",
+                    "marginBottom": "10px"
                 }
             ),
             html.Div(
                 children=tytul,
                 style={
-                    "fontSize": "16px",
-                    "fontWeight": "bold",
+                    "fontSize": "20px",
+                    "fontWeight": "700",
                     "textAlign": "center",
-                    "marginTop": "8px"
+                    "lineHeight": "1.2"
                 }
             )
         ],
         style={
             "border": "1px solid black",
-            "width": "180px",
-            "height": "105px",
+            "width": "260px",
+            "height": "150px",
+            "boxSizing": "border-box",
             "display": "flex",
             "flexDirection": "column",
             "justifyContent": "center",
             "alignItems": "center",
-            "backgroundColor": "white"
+            "backgroundColor": "white",
+            "overflow": "hidden",
+            # "marginTop": "90px",
+            # "marginLeft": "60px"
         }
     )
 
@@ -63,7 +69,7 @@ r = re.request(method="GET", url="http://127.0.0.1:8000/classes")
 data = r.json()
 df = pd.DataFrame(data)
 
-app = Dash()
+app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME])
 data_zajec = df["Data"].unique()
 godzina_od = df["godzinaOd"].unique()
 godzina_do = df["godzinaDo"].unique()
@@ -81,6 +87,10 @@ liczba_zajec_po_godzinie = (
 fig = zajecia(liczba_zajec_po_godzinie)
 
 app.layout = html.Div(children=[
+    # dbc.Container(
+    #     dbc.Alert("Hello Bootstrap!", color="success"),
+    #     className="p-5",
+    # ),
     html.Div(
         children=[
             dcc.Dropdown(
@@ -103,9 +113,12 @@ app.layout = html.Div(children=[
             )
         ],
         style={
+            "marginTop": "5px",
+            "marginLeft": "5px",
+            "marginRight": "5px",
             "display": "flex",
             "gap": "5px",
-            "width": "100%"
+            "width": "calc(100% - 10px)"
         }
     ),
     html.Div(
@@ -131,27 +144,40 @@ app.layout = html.Div(children=[
         ],
         style={
             "marginTop": "5px",
+            "marginLeft": "5px",
+            "marginRight": "5px",
             "display": "flex",
             "gap": "5px",
-            "width": "100%"
+            "width": "calc(100% - 10px)"
         }
     ),
     html.Div(
         children=[
-            dcc.Graph(
-                id='example-graph',
-                figure=fig
+            html.Div(
+                children=[
+                    dcc.Graph(
+                        id='example-graph',
+                        figure=fig
+                    )
+                ],
+                style={
+                    "marginTop": "5px",
+                    "marginLeft": "5px",
+                    "marginRight": "5px",
+                    "display": "flex",
+                    "gap": "5px",
+                    # "width": "70%",
+                    "border": "1px solid black",
+                    "backgroundColor": "white"
+                }
             ),
-            karta("liczba-zajec-card", "Liczba zajęć")
-        ],
-        style={
-            "marginTop": "5px",
-            "display": "flex",
-            "gap": "5px",
-            "width": "100%"
-        }
-    ),
-
+            html.Div(
+                children=[
+                    karta("liczba-zajec-card", "Liczba zajęć")
+                ]
+            )
+        ]
+    )
 ]
 )
 
@@ -177,14 +203,17 @@ def update_output_data(value):
     Input("data-dropdown", "value")
 )
 def update_count_data(value):
-    dff = df[df.Data == value]
-    card = karta("liczba-zajec-card", "Liczba zajęć", len(dff))
-    return card
+    dff = df[df["Data"] == value]
+    return len(dff)
 
 
 def run_app():
     if __name__ == '__main__':
-        app.run(debug=True)
+        app.run(
+            host="0.0.0.0",
+            port=8050,
+            debug=True
+        )
 
 
 run_app()
