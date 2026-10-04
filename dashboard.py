@@ -87,6 +87,16 @@ liczba_zajec_po_godzinie = (
 fig = zajecia(liczba_zajec_po_godzinie)
 
 app.layout = html.Div(children=[
+    dcc.Store(
+        id="data-store",
+        data=df.to_dict("records")
+    ),
+
+    dcc.Interval(
+        id="refresh-interval",
+        interval=60 * 1000,
+        n_intervals=0
+    ),
     # dbc.Container(
     #     dbc.Alert("Hello Bootstrap!", color="success"),
     #     className="p-5",
@@ -95,10 +105,10 @@ app.layout = html.Div(children=[
         children=[
             dcc.Dropdown(
                 data_zajec,
-                # data_zajec[0],
+                data_zajec[0],
                 id="data-dropdown",
                 style={"flex": "1"},
-                placeholder="Wybierz datę"
+                # placeholder="Wybierz datę"
             ),
             dcc.Dropdown(
                 godzina_od,
@@ -256,7 +266,21 @@ app.layout = html.Div(children=[
 )
 
 
+@callback(
+    Output("data-store", "data"),
+    Input("refresh-interval", "n_intervals")
+)
+def refresh_data(n):
+    r = re.get("http://127.0.0.1:8000/classes")
+    r.raise_for_status()
+
+    data = r.json()
+
+    return data
+
+
 def filtruj(
+    df,
     data_value=None,
     godzina_od_value=None,
     godzina_do_value=None,
@@ -299,6 +323,7 @@ def filtruj(
     Output("prowadzacy-dropdown", "options"),
     Output("nazwaSali-dropdown", "options"),
 
+    Input("data-store", "data"),
     Input("data-dropdown", "value"),
     Input("godzina-od-dropdown", "value"),
     Input("godzina-do-dropdown", "value"),
@@ -307,6 +332,7 @@ def filtruj(
     Input("nazwaSali-dropdown", "value"),
 )
 def update_dashboard(
+    stored_data,
     data_value,
     godzina_od_value,
     godzina_do_value,
@@ -314,11 +340,13 @@ def update_dashboard(
     prowadzacy_value,
     sala_value
 ):
+    df = pd.DataFrame(stored_data)
     # =========================
     # FILTROWANIE GŁÓWNE
     # =========================
 
     dff = filtruj(
+        df,
         data_value,
         godzina_od_value,
         godzina_do_value,
@@ -363,6 +391,7 @@ def update_dashboard(
 
     data_options = (
         filtruj(
+            df,
             None,
             godzina_od_value,
             godzina_do_value,
@@ -377,6 +406,7 @@ def update_dashboard(
 
     godzina_od_options = (
         filtruj(
+            df,
             data_value,
             None,
             godzina_do_value,
@@ -391,6 +421,7 @@ def update_dashboard(
 
     godzina_do_options = (
         filtruj(
+            df,
             data_value,
             godzina_od_value,
             None,
@@ -405,6 +436,7 @@ def update_dashboard(
 
     budynek_options = (
         filtruj(
+            df,
             data_value,
             godzina_od_value,
             godzina_do_value,
@@ -419,6 +451,7 @@ def update_dashboard(
 
     prowadzacy_options = (
         filtruj(
+            df,
             data_value,
             godzina_od_value,
             godzina_do_value,
@@ -433,6 +466,7 @@ def update_dashboard(
 
     sala_options = (
         filtruj(
+            df,
             data_value,
             godzina_od_value,
             godzina_do_value,
