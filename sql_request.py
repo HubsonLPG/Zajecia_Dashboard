@@ -1,8 +1,8 @@
 import os
-import pyodbc
-import pandas as pd
-from dotenv import load_dotenv
 
+import pandas as pd
+import pyodbc
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -25,7 +25,7 @@ SELECT DISTINCT
 FROM [QS].[v_PlanZajec]
 WHERE
     CAST(dataOd AS DATE) >= CAST(GETDATE() AS DATE)
-    AND CAST(dataOd AS DATE) < CAST(DATEADD(day, 7, GETDATE()) AS DATE)
+    AND CAST(dataOd AS DATE) < CAST(DATEADD(day, 15, GETDATE()) AS DATE)
     AND (
         LOWER(TRIM(budynekNazwa)) LIKE '%wydział nauk stosowanych%'
         OR LOWER(TRIM(budynekNazwa)) LIKE '%będzin%'
