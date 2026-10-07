@@ -181,7 +181,6 @@ app.layout = html.Div(
                                 "marginBottom": "12px",
                             }
                         ),
-
                         # Pierwszy rząd
                         html.Div(
                             children=[
@@ -199,9 +198,9 @@ app.layout = html.Div(
 
                                         dcc.Dropdown(
                                             data_zajec,
-                                            data_zajec[0],
                                             id="data-dropdown",
                                             clearable=True,
+                                            placeholder="Wybierz datę"
                                         )
                                     ],
                                     style={
@@ -310,7 +309,29 @@ app.layout = html.Div(
                                             prowadzacy,
                                             id="prowadzacy-dropdown",
                                             placeholder="Wybierz prowadzącego"
+                                        ),
+                                        html.Div(
+                                            children=[
+                                                dbc.Button(
+                                                    "Resetuj filtry",
+                                                    id="filterReset-button",
+                                                    color="secondary",
+                                                    outline=True,
+                                                    style={
+                                                        "borderRadius": "8px",
+                                                        "fontWeight": "600",
+                                                        "padding": "8px 16px",
+                                                    }
+                                                )
+                                            ],
+                                            style={
+                                                "display": "flex",
+                                                "justifyContent": "center",
+                                                "marginTop": "14px",
+                                                "marginBottom": "8px",
+                                            }
                                         )
+
                                     ],
                                     style={
                                         "flex": "1",
@@ -449,15 +470,6 @@ app.layout = html.Div(
                                         "color": "#374151",
                                     }
                                 ),
-
-                                html.Div(
-                                    "Tabela uwzględnia aktywne filtry",
-                                    style={
-                                        "fontSize": "13px",
-                                        "color": "#9ca3af",
-                                        "marginTop": "3px",
-                                    }
-                                )
                             ],
 
                             style={
@@ -587,6 +599,23 @@ def refresh_data(n):
     return data
 
 
+@callback(
+    Output("data-dropdown", "value"),
+    Output("godzina-od-dropdown", "value"),
+    Output("godzina-do-dropdown", "value"),
+    Output("budynekNazwa-dropdown", "value"),
+    Output("prowadzacy-dropdown", "value"),
+    Output("nazwaSali-dropdown", "value"),
+    Output("classes-table", "sort_by"),
+    Output("classes-table", "filter_query"),
+
+    Input("filterReset-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def reset_filters(n_clicks):
+    return None, None, None, None, None, None, [], ""
+
+
 def filtruj(
     df,
     data_value=None,
@@ -649,9 +678,6 @@ def update_dashboard(
     sala_value
 ):
     df = pd.DataFrame(stored_data)
-    # =========================
-    # FILTROWANIE GŁÓWNE
-    # =========================
 
     dff = filtruj(
         df,
@@ -663,10 +689,6 @@ def update_dashboard(
         sala_value
     )
 
-    # =========================
-    # WYKRES
-    # =========================
-
     liczba_zajec_po_godzinie = (
         dff.groupby("godzinaOd")
         .size()
@@ -675,10 +697,6 @@ def update_dashboard(
     )
 
     fig = zajecia(liczba_zajec_po_godzinie)
-
-    # =========================
-    # TABELA
-    # =========================
 
     table_data = dff[
         [
@@ -690,12 +708,6 @@ def update_dashboard(
             "budynekNazwa",
         ]
     ].to_dict("records")
-
-    # =========================
-    # OPCJE DROPDOWNÓW
-    # każdy dropdown filtrujemy
-    # wszystkimi pozostałymi
-    # =========================
 
     data_options = (
         filtruj(
@@ -786,10 +798,6 @@ def update_dashboard(
         .unique()
         .tolist()
     )
-
-    # =========================
-    # RETURN
-    # =========================
 
     return (
         fig,
