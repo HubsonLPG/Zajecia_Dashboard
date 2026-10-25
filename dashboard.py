@@ -462,16 +462,24 @@ app.layout = html.Div(
                     children=[
                         html.Div(
                             children=[
-                                html.Div(
+                                html.Button(
                                     "Szczegóły zajęć",
+                                    id="secret-teacher-button",
+                                    n_clicks=0,
                                     style={
                                         "fontSize": "16px",
                                         "fontWeight": "700",
                                         "color": "#374151",
+
+                                        "background": "none",
+                                        "border": "none",
+                                        "padding": "0",
+                                        "margin": "0",
+                                        "cursor": "default",
+                                        "fontFamily": "inherit",
                                     }
                                 ),
                             ],
-
                             style={
                                 "marginBottom": "14px"
                             }
@@ -608,12 +616,13 @@ def refresh_data(n):
     Output("nazwaSali-dropdown", "value"),
     Output("classes-table", "sort_by"),
     Output("classes-table", "filter_query"),
+    Output("secret-teacher-button", "n_clicks"),
 
     Input("filterReset-button", "n_clicks"),
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return None, None, None, None, None, None, [], ""
+    return None, None, None, None, None, None, [], "", 0
 
 
 def filtruj(
@@ -667,6 +676,7 @@ def filtruj(
     Input("budynekNazwa-dropdown", "value"),
     Input("prowadzacy-dropdown", "value"),
     Input("nazwaSali-dropdown", "value"),
+    Input("secret-teacher-button", "n_clicks"),
 )
 def update_dashboard(
     stored_data,
@@ -675,9 +685,12 @@ def update_dashboard(
     godzina_do_value,
     budynek_value,
     prowadzacy_value,
-    sala_value
+    sala_value,
+    secret_clicks
 ):
     df = pd.DataFrame(stored_data)
+
+    sssh = (secret_clicks or 0) % 2 == 1
 
     dff = filtruj(
         df,
@@ -688,6 +701,42 @@ def update_dashboard(
         prowadzacy_value,
         sala_value
     )
+
+    if sssh:
+        df_late = filtruj(
+            df,
+            data_value,
+            None,
+            None,
+            budynek_value,
+            prowadzacy_value,
+            sala_value
+        )
+
+        godziny = pd.to_datetime(
+            df_late["godzinaOd"],
+            format="%H:%M"
+        ).dt.time
+
+        prowadzacy_po_16 = (
+            df_late.loc[
+                godziny >= pd.to_datetime(
+                    "16:00",
+                    format="%H:%M"
+                ).time(),
+                "prowadzacy"
+            ]
+            .dropna()
+            .unique()
+        )
+
+        dff = df_late[
+            df_late["prowadzacy"].isin(prowadzacy_po_16)
+        ]
+
+        dff = dff.sort_values(
+            ["prowadzacy", "godzinaOd"]
+        )
 
     liczba_zajec_po_godzinie = (
         dff.groupby("godzinaOd")

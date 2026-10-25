@@ -1,0 +1,8 @@
+dash==4.1.0
+dash_bootstrap_components==2.0.4
+fastapi==0.143.0
+pandas==3.0.6
+plotly==7.1.0
+pyodbc==5.3.0
+python-dotenv==1.2.4
+Requests==2.34.2
